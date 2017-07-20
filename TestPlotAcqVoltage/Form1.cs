@@ -50,15 +50,21 @@ namespace TestPlotAcqVoltage
             //
             // TODO: Add any constructor code after InitializeComponent call
             //
-            stopButton.Enabled = false;
-            dataChart.Series["Data1"].IsVisibleInLegend = false;
-            //dataTable = new DataTable();
+            setEnabled_graph(false);
 
             physicalChannelComboBox.Items.AddRange(DaqSystem.Local.GetPhysicalChannels(PhysicalChannelTypes.AI, PhysicalChannelAccess.External));
             if (physicalChannelComboBox.Items.Count > 0)
                 physicalChannelComboBox.SelectedIndex = 0;
 
         }
+        
+        private void setEnabled_graph(bool setEnabled)
+        {
+            dataChart.Series["Data1"].IsVisibleInLegend = setEnabled;
+            stopButton.Enabled = setEnabled;
+            startButton.Enabled = !setEnabled;
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -76,9 +82,7 @@ namespace TestPlotAcqVoltage
             {
                 try
                 {
-                    dataChart.Series["Data1"].IsVisibleInLegend = true;
-                    stopButton.Enabled = true;
-                    startButton.Enabled = false;
+                    setEnabled_graph(true);
 
                     // Create a new task
                     myTask = new Task();
@@ -95,15 +99,7 @@ namespace TestPlotAcqVoltage
                     // Configure the Every N Samples Event
                     myTask.EveryNSamplesReadEventInterval = Convert.ToInt32(samplesPerChannelNumeric.Value);
                     myTask.EveryNSamplesRead += new EveryNSamplesReadEventHandler(myTask_EveryNSamplesRead);
-
-
-                    // Verify the Task
-                    myTask.Control(TaskAction.Verify);
-
-                    // Prepare the table for Data
-                    //InitializeDataTable(myTask.AIChannels, ref dataTable);
-                    //acquisitionDataGrid.DataSource = dataTable;
-
+                    
                     runningTask = myTask;
                     analogInReader = new AnalogMultiChannelReader(myTask.Stream);
                     runningTask.SynchronizeCallbacks = true;
@@ -117,8 +113,7 @@ namespace TestPlotAcqVoltage
                     MessageBox.Show(exception.Message);
                     runningTask = null;
                     myTask.Dispose();
-                    stopButton.Enabled = false;
-                    startButton.Enabled = true;
+                    setEnabled_graph(false);
                 }
             }
         }
@@ -133,7 +128,6 @@ namespace TestPlotAcqVoltage
 
                 // Plot your data here
                 dataToDataGraph(data);
-                //dataToDataTable(data, ref dataTable);
 
             }
             catch (DaqException exception)
@@ -142,8 +136,7 @@ namespace TestPlotAcqVoltage
                 MessageBox.Show(exception.Message);
                 runningTask = null;
                 myTask.Dispose();
-                stopButton.Enabled = false;
-                startButton.Enabled = true;
+                setEnabled_graph(false);
             }
         }
 
@@ -157,9 +150,7 @@ namespace TestPlotAcqVoltage
                 // Dispose of the task
                 runningTask = null;
                 myTask.Dispose();
-                dataChart.Series["Data1"].IsVisibleInLegend = false;
-                stopButton.Enabled = false;
-                startButton.Enabled = true;
+                setEnabled_graph(false);
             }
         }
 
@@ -173,53 +164,9 @@ namespace TestPlotAcqVoltage
                 for (int sample = 0; sample < 50; ++sample)
                 {                    
                     dataChart.Series["Data1"].Points.AddY(waveform.Samples[sample].Value);
-                    //dataTable.Rows[sample][currentLineIndex] = waveform.Samples[sample].Value;
                 }
                 currentLineIndex++;
             }
         }
-        /*
-        private void dataToDataTable(AnalogWaveform<double>[] sourceArray, ref DataTable dataTable)
-        {
-            // Iterate over channels
-            int currentLineIndex = 0;
-            foreach (AnalogWaveform<double> waveform in sourceArray)
-            {
-                for (int sample = 0; sample < waveform.Samples.Count; ++sample)
-                {
-                    if (sample == 10)
-                        break;
-
-                    dataTable.Rows[sample][currentLineIndex] = waveform.Samples[sample].Value;
-                }
-                currentLineIndex++;
-            }
-        }
-        */
-        /*
-        public void InitializeDataTable(AIChannelCollection channelCollection, ref DataTable data)
-        {
-            int numOfChannels = channelCollection.Count;
-            data.Rows.Clear();
-            data.Columns.Clear();
-            dataColumn = new DataColumn[numOfChannels];
-            int numOfRows = 10;
-
-            for (int currentChannelIndex = 0; currentChannelIndex < numOfChannels; currentChannelIndex++)
-            {
-                dataColumn[currentChannelIndex] = new DataColumn();
-                dataColumn[currentChannelIndex].DataType = typeof(double);
-                dataColumn[currentChannelIndex].ColumnName = channelCollection[currentChannelIndex].PhysicalName;
-            }
-
-            data.Columns.AddRange(dataColumn);
-
-            for (int currentDataIndex = 0; currentDataIndex < numOfRows; currentDataIndex++)
-            {
-                object[] rowArr = new object[numOfChannels];
-                data.Rows.Add(rowArr);
-            }
-        }
-        */
     }
 }
